@@ -4,12 +4,10 @@
 			<v-app-bar-nav-icon @click="drawer = !drawer" />
 			<site-title :title="site.title"></site-title>
 			<v-spacer />
+			<site-sign></site-sign>
 			<!-- <v-btn icon @click="save"><v-icon>mdi-check</v-icon></v-btn>
 			<v-btn icon @click="read"><v-icon>mdi-dns</v-icon></v-btn>
 			<v-btn icon @click="readOne"><v-icon>mdi-toc</v-icon></v-btn> -->
-			<v-btn icon to="/about">
-				<v-icon>mdi-magnify</v-icon>
-			</v-btn>
 		</v-app-bar>
 		<v-navigation-drawer app v-model="drawer" width="400">
 			<site-menu :items="site.menu"></site-menu>
@@ -25,13 +23,15 @@
 import SiteTitle from '@/views/site/title'
 import SiteFooter from '@/views/site/footer'
 import SiteMenu from '@/views/site/menu'
+import SiteSign from '@/views/site/sign'
 
 export default {
 	name: 'App',
 	components: {
 		SiteTitle,
 		SiteFooter,
-		SiteMenu
+		SiteMenu,
+		SiteSign
 	},
 	data() {
 		return {
