@@ -4,14 +4,20 @@ var serviceAccount = require('./key.json')
 
 admin.initializeApp({
 	credential: admin.credential.cert(serviceAccount),
-	databaseURL: 'https://portfolio-27205-default-rtdb.firebaseio.com'
+	databaseURL: functions.config().admin.db_url //'https://portfolio-27205-default-rtdb.firebaseio.com'
 })
 
 const db = admin.database()
 
 exports.createUser = functions.auth.user().onCreate(async user => {
 	const { uid, email, displayName, photoURL } = user
-	const u = { email, displayName, photoURL, createAt: new Date() }
+	const u = {
+		email,
+		displayName,
+		photoURL,
+		createAt: new Date().getMilliseconds(),
+		level: email == functions.config().admin.email ? 0 : 5
+	}
 	db.ref('users').child(uid).set(u)
 })
 
