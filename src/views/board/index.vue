@@ -7,12 +7,18 @@
 			:items-per-page="5"
 			:options.sync="options"
 			:server-items-length="serverItemsLength"
+			must-sort
 		>
 			<template v-slot:item.id="{ item }">
-				<v-btn icon @click="openDialog(item)"
-					><v-icon>mdi-pencil</v-icon></v-btn
-				>
-				<v-btn icon @click="remove(item)"><v-icon>mdi-delete</v-icon></v-btn>
+				<v-btn icon @click="openDialog(item)">
+					<v-icon>mdi-pencil</v-icon>
+				</v-btn>
+				<v-btn icon @click="remove(item)">
+					<v-icon>mdi-delete</v-icon>
+				</v-btn>
+			</template>
+			<template v-slot:item.createdAt="{ item }">
+				{{ item.createdAt.toLocaleString() }}
 			</template>
 		</v-data-table>
 		<v-card-actions>
@@ -36,13 +42,16 @@
 	</v-card>
 </template>
 <script>
+import { head, last } from 'lodash'
+
 export default {
 	data() {
 		return {
 			headers: [
+				{ value: 'createdAt', text: '작성일' },
 				{ value: 'title', text: '제목' },
 				{ value: 'content', text: '내용' },
-				{ value: 'id', text: 'id' }
+				{ value: 'id', text: 'id', sortable: false }
 			],
 			items: [],
 			form: {
@@ -54,15 +63,18 @@ export default {
 			unsubscribe: null,
 			unsubscribeCount: null,
 			serverItemsLength: 0,
-			options: {}
+			options: {
+				sortBy: ['createdAt'],
+				sortDesc: [true]
+			},
+			docs: []
 		}
 	},
 	watch: {
 		options: {
 			handler(n, o) {
-				console.log(o)
-				console.log(n)
-				this.subscribe()
+				const arrow = n.page - o.page
+				this.subscribe(arrow)
 			},
 			deep: true
 		}
@@ -75,8 +87,8 @@ export default {
 		if (this.unsubscribeCount) this.unsubscribeCount()
 	},
 	methods: {
-		subscribe() {
-			this.unsubscribeCount = this.$firebase
+		subscribe(arrow) {
+			this.$firebase
 				.firestore()
 				.collection('meta')
 				.doc('boards')
@@ -84,24 +96,46 @@ export default {
 					if (!doc.exists) return
 					this.serverItemsLength = doc.data().count
 				})
-			this.unsubscribe = this.$firebase
+			const order = head(this.options.sortBy)
+			const sort = head(this.options.sortDesc) ? 'desc' : 'asc'
+			const limit = this.options.itemsPerPage
+
+			const ref = this.$firebase
 				.firestore()
 				.collection('boards')
-				.limit(this.options.itemsPerPage)
-				.onSnapshot(sn => {
-					if (sn.empty) {
-						this.items = []
-						return
+				.orderBy(order, sort)
+			let query
+			switch (arrow) {
+				case -1:
+					query = ref.endBefore(head(this.docs)).limitToLast(limit)
+
+					break
+				case 1:
+					query = ref.startAfter(last(this.docs)).limit(limit)
+					break
+
+				default:
+					query = ref.limit(limit)
+					break
+			}
+
+			this.unsubscribe = query.onSnapshot(sn => {
+				if (sn.empty) {
+					this.items = []
+					return
+				}
+
+				this.docs = sn.docs
+				this.items = sn.docs.map(v => {
+					const item = v.data()
+					return {
+						id: v.id,
+						title: item.title,
+						content: item.content,
+						createdAt: item.createdAt.toDate()
 					}
-					this.items = sn.docs.map(v => {
-						const item = v.data()
-						return {
-							id: v.id,
-							title: item.title,
-							content: item.content
-						}
-					})
 				})
+			})
 		},
 		openDialog(item) {
 			this.selectedItem = item
@@ -115,7 +149,10 @@ export default {
 			}
 		},
 		add() {
-			this.$firebase.firestore().collection('boards').add(this.form)
+			const item = {}
+			Object.assign(item, this.form)
+			item.createdAt = new Date()
+			this.$firebase.firestore().collection('boards').add(item)
 			this.dialog = false
 		},
 		update() {
