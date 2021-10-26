@@ -41,6 +41,9 @@
 								>
 									<v-icon>mdi-chevron-double-down</v-icon>
 								</v-btn>
+								<v-btn icon @click="removeItem(items, i)">
+									<v-icon>mdi-delete</v-icon>
+								</v-btn>
 							</span>
 						</v-list-item-title>
 					</v-list-item-content>
@@ -71,6 +74,9 @@
 									v-if="j < item.subItems.length - 1"
 								>
 									<v-icon>mdi-chevron-double-down</v-icon>
+								</v-btn>
+								<v-btn icon @click="removeItem(item.subItems, j)">
+									<v-icon>mdi-delete</v-icon>
 								</v-btn>
 							</span>
 						</v-list-item-title>
@@ -185,7 +191,7 @@ export default {
 			selectedItemIndex: 0,
 			selectedSubItemIndex: 0,
 			formItem: {
-				icon: 'mdi:file-question',
+				icon: 'mdi-crosshairs-question',
 				title: ''
 			},
 			formSubItem: {
@@ -244,9 +250,7 @@ export default {
 		async saveSubItem() {
 			if (this.selectedSubItemIndex < 0) {
 				if (!this.items[this.selectedItemIndex].subItems)
-					this.items[this.selectedItemIndex] = this.items[
-						this.selectedItemIndex
-					].subItems = []
+					this.items[this.selectedItemIndex].subItems = []
 				this.items[this.selectedItemIndex].subItems.push({
 					title: this.formSubItem.title,
 					to: this.formSubItem.to
@@ -265,6 +269,10 @@ export default {
 			// const item = items.splice(i, 1)[0]
 			// items.splice(i + arrow, 0, item)
 			items.splice(i + arrow, 0, ...items.splice(i, 1))
+			this.save()
+		},
+		removeItem(items, i) {
+			items.splice(i, 1)
 			this.save()
 		}
 	}
